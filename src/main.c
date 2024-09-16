@@ -4,49 +4,50 @@
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
-#define SQUARE_SIZE 80
-#define BOARD_SIZE 8
 
 struct Board *board = NULL;
 
-void update() {}
+void update() {
+  if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    Vector2 square = GetClickedSquare();
+    printf("square click event %d-%d\n", (int)square.x, (int)square.y);
+  }
+}
 
 void draw() {
+  BeginDrawing();
+  ClearBackground(WHITE);
 
-  Color squareColor;
+  for (int y = 0; y < BOARD_SIZE; y++) {
+    for (int x = 0; x < BOARD_SIZE; x++) {
+      // Calculate the position based on column (x) and row (y)
+      int xPos = SQUARE_SIZE * x;
+      int yPos = SQUARE_SIZE * y;
 
-  for (int i = 0; i < BOARD_SIZE; i++) {
-    for (int j = 0; j < BOARD_SIZE; j++) {
-      if ((i + j) % 2 == 0) {
-        squareColor = green;
-      } else {
-        squareColor = white;
+      // Draw green squares
+      if ((x + y) % 2 == 0) {
+        DrawRectangle(xPos, yPos, SQUARE_SIZE, SQUARE_SIZE, BoardSquareGreen);
       }
 
-      int xPos = SQUARE_SIZE * i, yPos = SQUARE_SIZE * j;
-
-      DrawRectangle(xPos, yPos, SQUARE_SIZE, SQUARE_SIZE, squareColor);
-
-      printf("drawing piece on position %d-%d\n", i, j);
-      if (board->pieces[i][j] != NULL) {
-        struct Piece *p = GetPieceInXYPosition(i, j);
-
-        if (p != NULL) {
-          printf("Drawning pawn on position %d-%d\n", i, j);
-          DrawTexture(*p->img, xPos, yPos, white);
-        }
+      // Get the piece in this position and draw it
+      struct Piece *p = GetPieceInXYPosition(x, y);
+      if (p != NULL) {
+        unsigned padding = (SQUARE_SIZE - PIECE_IMG_SIZE) / 2;
+        DrawTexture(*getPieceTexture(p), p->pos.x + padding, p->pos.y + padding,
+                    WHITE);
       }
     }
   }
+
   EndDrawing();
 }
 
 int main() {
 
+  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
+  SetTargetFPS(60);
   Init();
   Reset();
-
-  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
 
   while (!WindowShouldClose()) {
     update();

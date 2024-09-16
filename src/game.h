@@ -1,9 +1,12 @@
 #ifndef GAME_H
 #define GAME_H
 
+#define PIECE_IMG_SIZE 75
+#define SQUARE_SIZE 80
+#define BOARD_SIZE 8
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "raylib.h"
 
@@ -24,7 +27,8 @@ enum Player {
 struct Piece {
   enum Player player;
   enum PieceType type;
-  Texture2D *img;
+  Vector2 square;
+  Vector2 pos;
 };
 
 struct Board {
@@ -39,13 +43,16 @@ struct Moves {
 
 static Texture2D _whitePieceTextures[6];
 static Texture2D _blackPieceTextures[6];
-static struct Piece _whitePieces[6];
-static struct Piece _blackPieces[6];
+static struct Piece _whitePieces[16];
+static struct Piece _blackPieces[16];
 static struct Board _board;
 
 void Init();
 void Deinit();
 void Reset();
 struct Piece *GetPieceInXYPosition(unsigned x, unsigned y);
+Vector2 GetClickedSquare();
+struct Moves GetPossibleMoves(struct Piece *piece);
+Texture2D *getPieceTexture(const struct Piece *piece);
 
 #endif // GAME_H
