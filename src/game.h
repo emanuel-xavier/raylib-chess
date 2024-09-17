@@ -54,11 +54,11 @@ void Reset();
 struct Piece *GetPieceInXYPosition(unsigned x, unsigned y);
 Vector2 GetSquareOverlabByTheCursor();
 struct Moves GetPossibleMoves(struct Piece *piece);
-Texture2D *getPieceTexture(const struct Piece *piece);
+Texture2D *GetPieceTexture(const struct Piece *piece);
 enum Player GetCurrentPlayer();
 enum Player NextPlayer();
 
-inline static void _debug_printBoard() {
+static inline void _debug_printBoard() {
   for (int y = 0; y < 8; y++) {
     for (int x = 0; x < 8; x++) {
       if (_board.pieces[x][y] != NULL) {

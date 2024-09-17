@@ -92,7 +92,7 @@ void draw() {
       struct Piece *p = GetPieceInXYPosition(x, y);
       if (p != NULL) {
         unsigned padding = (SQUARE_SIZE - PIECE_IMG_SIZE) / 2;
-        DrawTexture(*getPieceTexture(p), p->pos.x + padding, p->pos.y + padding,
+        DrawTexture(*GetPieceTexture(p), p->pos.x + padding, p->pos.y + padding,
                     WHITE);
       }
     }
@@ -100,7 +100,7 @@ void draw() {
 
   if (selected != NULL) {
     unsigned padding = (SQUARE_SIZE - PIECE_IMG_SIZE) / 2;
-    DrawTexture(*getPieceTexture(selected), selected->pos.x + padding,
+    DrawTexture(*GetPieceTexture(selected), selected->pos.x + padding,
                 selected->pos.y + padding, WHITE);
   }
 

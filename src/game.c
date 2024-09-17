@@ -201,7 +201,7 @@ Vector2 GetSquareOverlabByTheCursor() {
   };
 }
 
-Texture2D *getPieceTexture(const struct Piece *piece) {
+Texture2D *GetPieceTexture(const struct Piece *piece) {
   if (piece->player == WhitePlayer)
     return &(_whitePieceTextures[piece->type]);
   return &(_blackPieceTextures[piece->type]);
