@@ -7,6 +7,11 @@
 
 struct Piece *selected = NULL;
 
+float clamp(float value, float min, float max) {
+  const float t = value < min ? min : value;
+  return t > max ? max : t;
+}
+
 void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     Vector2 square = GetSquareOverlabByTheCursor();
@@ -33,11 +38,14 @@ void update() {
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
     if (selected != NULL) {
-      selected->pos = GetSquareOverlabByTheCursor();
-      selected->square = selected->pos;
-      selected->pos.x *= SQUARE_SIZE;
-      selected->pos.y *= SQUARE_SIZE;
-      printf("dragging %f-%f\n", selected->pos.x, selected->pos.y);
+      Vector2 mousePos = GetMousePosition();
+      mousePos.x =
+          clamp(mousePos.x, 0, WINDOW_WIDTH) - (float)PIECE_IMG_SIZE / 2;
+      mousePos.y =
+          clamp(mousePos.y, 0, WINDOW_WIDTH) - (float)PIECE_IMG_SIZE / 2;
+
+      selected->pos = mousePos;
+      selected->square = GetSquareOverlabByTheCursor();
     }
   }
 }
