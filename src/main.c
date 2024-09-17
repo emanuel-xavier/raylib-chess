@@ -15,20 +15,23 @@ float clamp(float value, float min, float max) {
 
 void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    TraceLog(LOG_DEBUG, "Left mouse button pressed");
     Vector2 square = GetSquareOverlabByTheCursor();
     selected = GetPieceInXYPosition(square.x, square.y);
     if (selected != NULL) {
       if (selected->player == GetCurrentPlayer()) {
         selectedOldPosition = selected->square;
         selected->pos = GetMousePosition();
-        printf("piece on square %f-%f was selected\n", selected->square.x,
-               selected->square.y);
+        TraceLog(LOG_DEBUG, "piece on square %f-%f was selected",
+                 selected->square.x, selected->square.y);
       } else {
+        TraceLog(LOG_DEBUG, "Can't move other player's piece");
         selected = NULL;
       }
     }
   }
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    TraceLog(LOG_DEBUG, "Left mouse button released");
     if (selected != NULL) {
       if (selected->square.x != selectedOldPosition.x ||
           selected->square.y != selectedOldPosition.y) {
@@ -40,13 +43,13 @@ void update() {
         selected->square = newSquare;
         selected->pos.x = newSquare.x * SQUARE_SIZE;
         selected->pos.y = newSquare.y * SQUARE_SIZE;
-        printf("piece was released at %f-%f\n", selected->square.x,
-               selected->square.y);
+        TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
+                 selected->square.y);
         selected = NULL;
         NextPlayer();
       } else {
-        printf("piece was released at it origial square %f-%f\n",
-               selected->square.x, selected->square.y);
+        TraceLog(LOG_DEBUG, "piece was released at it origial square %f-%f",
+                 selected->square.x, selected->square.y);
 
         selected->square = selectedOldPosition;
         selected->pos.x = selectedOldPosition.x * SQUARE_SIZE;
@@ -109,6 +112,7 @@ void draw() {
 
 int main() {
 
+  SetTraceLogLevel(LOG_DEBUG);
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
   Init();

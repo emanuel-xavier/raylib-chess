@@ -4,14 +4,14 @@ void Init() {
   // Allocate memory for pieces matrix
   _board.pieces = (struct Piece ***)malloc(8 * sizeof(struct Piece **));
   if (_board.pieces == NULL) {
-    printf("Memory allocation failed - pieces matrix\n");
+    TraceLog(LOG_DEBUG, "Memory allocation failed - pieces matrix");
     exit(1);
   }
 
   for (int i = 0; i < 8; i++) {
     _board.pieces[i] = (struct Piece **)malloc(8 * sizeof(struct Piece *));
     if (_board.pieces[i] == NULL) {
-      printf("Memory allocation failed - row(%d)\n", i);
+      TraceLog(LOG_DEBUG, "Memory allocation failed - row(%d)", i);
       for (int j = 0; j < i; j++) {
         free(_board.pieces[j]);
       }
@@ -34,13 +34,13 @@ void Init() {
 
     const char *app_dir = GetApplicationDirectory();
     ChangeDirectory(app_dir);
-    printf("Loading piece img for index %d\n", i);
+    TraceLog(LOG_DEBUG, "Loading piece img for index %d", i);
 
     // Load white piece texture
     sprintf(filePath, filePathFormatStr, "white", i);
     Image whitePieceImg = LoadImage(filePath);
     if (whitePieceImg.data == NULL) {
-      printf("Failed to load image from '%s'\n", filePath);
+      TraceLog(LOG_DEBUG, "Failed to load image from '%s'", filePath);
       Deinit();
       exit(1);
     }
@@ -49,7 +49,7 @@ void Init() {
     sprintf(filePath, filePathFormatStr, "black", i);
     Image blackPieceImg = LoadImage(filePath);
     if (blackPieceImg.data == NULL) {
-      printf("Failed to load image from '%s'\n", filePath);
+      TraceLog(LOG_DEBUG, "Failed to load image from '%s'", filePath);
       UnloadImage(
           whitePieceImg); // Unload the white image since it was already loaded
       Deinit();
@@ -64,7 +64,7 @@ void Init() {
 
     if (!IsTextureReady(whitePieceTexture) ||
         !IsTextureReady(blackPieceTexture)) {
-      printf("Texture is not ready\n");
+      TraceLog(LOG_DEBUG, "Texture is not ready");
       UnloadImage(whitePieceImg);
       UnloadImage(blackPieceImg);
       Deinit();
@@ -164,14 +164,14 @@ void Reset() {
     }
   }
 
-  printf("Initializing white pieces\n");
+  TraceLog(LOG_DEBUG, "Initializing white pieces");
   resetPlayerPieces(WhitePlayer, _whitePieces);
 
-  printf("Initializing black pieces\n");
+  TraceLog(LOG_DEBUG, "Initializing black pieces");
   resetPlayerPieces(BlackPlayer, _blackPieces);
 
   // Set positions for all pieces
-  printf("Setting piece positions\n");
+  TraceLog(LOG_DEBUG, "Setting piece positions");
   for (x = 0; x < 8; x++) {
     for (y = 0; y < 2; y++) {
       _board.pieces[x][y]->pos = (Vector2){
@@ -187,7 +187,7 @@ void Reset() {
     }
   }
 
-  printf("Board reset\n");
+  TraceLog(LOG_DEBUG, "Board reset");
 }
 
 struct Piece *GetPieceInXYPosition(unsigned x, unsigned y) {
