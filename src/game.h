@@ -51,7 +51,7 @@ void Init();
 void Deinit();
 void Reset();
 struct Piece *GetPieceInXYPosition(unsigned x, unsigned y);
-Vector2 GetClickedSquare();
+Vector2 GetSquareOverlabByTheCursor();
 struct Moves GetPossibleMoves(struct Piece *piece);
 Texture2D *getPieceTexture(const struct Piece *piece);
 

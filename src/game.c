@@ -285,7 +285,7 @@ struct Piece *GetPieceInXYPosition(unsigned x, unsigned y) {
   return _board.pieces[x][y];
 }
 
-Vector2 GetClickedSquare() {
+Vector2 GetSquareOverlabByTheCursor() {
   return (Vector2){
       .x = (int)(GetMouseX() / SQUARE_SIZE),
       .y = (int)(GetMouseY() / SQUARE_SIZE),

@@ -5,12 +5,40 @@
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
 
-struct Board *board = NULL;
+struct Piece *selected = NULL;
 
 void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    Vector2 square = GetClickedSquare();
-    printf("square click event %d-%d\n", (int)square.x, (int)square.y);
+    Vector2 square = GetSquareOverlabByTheCursor();
+    selected = GetPieceInXYPosition(square.x, square.y);
+    if (selected != NULL) {
+      selected->pos = GetMousePosition();
+      printf("piece on square %f-%f was selected\n", selected->square.x,
+             selected->square.y);
+    }
+  }
+  if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+    if (selected != NULL) {
+      selected->pos = GetSquareOverlabByTheCursor();
+      selected->square = selected->pos;
+      selected->pos.x *= SQUARE_SIZE;
+      selected->pos.y *= SQUARE_SIZE;
+
+      printf("piece on square was released at %f-%f\n", selected->square.x,
+             selected->square.y);
+
+      selected = NULL;
+    }
+  }
+
+  if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    if (selected != NULL) {
+      selected->pos = GetSquareOverlabByTheCursor();
+      selected->square = selected->pos;
+      selected->pos.x *= SQUARE_SIZE;
+      selected->pos.y *= SQUARE_SIZE;
+      printf("dragging %f-%f\n", selected->pos.x, selected->pos.y);
+    }
   }
 }
 
@@ -37,6 +65,12 @@ void draw() {
                     WHITE);
       }
     }
+  }
+
+  if (selected != NULL) {
+    unsigned padding = (SQUARE_SIZE - PIECE_IMG_SIZE) / 2;
+    DrawTexture(*getPieceTexture(selected), selected->pos.x + padding,
+                selected->pos.y + padding, WHITE);
   }
 
   EndDrawing();
