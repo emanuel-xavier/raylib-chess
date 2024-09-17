@@ -107,6 +107,53 @@ void Deinit() {
   }
 }
 
+void resetPlayerPieces(enum Player player, struct Piece *pieces) {
+  int x = 0, y;
+  int backRowY = (player == WhitePlayer) ? 7 : 0;
+  int pawnRowY = (player == WhitePlayer) ? 6 : 1;
+  int piecesOrder[3] = {Rook, Knight, Bishop};
+
+  // Place pawns
+  for (x = 0; x < 8; x++) {
+    pieces[x] = (struct Piece){
+        .player = player,
+        .type = Pawn,
+        .square = (Vector2){x, pawnRowY},
+    };
+    _board.pieces[x][pawnRowY] = &pieces[x];
+  }
+
+  // Initialize rooks, knights, and bishops
+  for (y = 0; y < 3; y++) {
+    for (int k = 0; k < 2; k++, x++) {
+      int yPos = (k == 0) ? y : 7 - y;
+      pieces[x] = (struct Piece){
+          .player = player,
+          .type = piecesOrder[y],
+          .square = (Vector2){yPos, backRowY},
+      };
+      _board.pieces[yPos][backRowY] = &pieces[x];
+    }
+  }
+
+  // Place king
+  pieces[x] = (struct Piece){
+      .player = player,
+      .type = King,
+      .square = (Vector2){4, backRowY},
+  };
+  _board.pieces[4][backRowY] = &pieces[x];
+
+  // Place queen
+  x++;
+  pieces[x] = (struct Piece){
+      .player = player,
+      .type = Queen,
+      .square = (Vector2){3, backRowY},
+  };
+  _board.pieces[3][backRowY] = &pieces[x];
+}
+
 void Reset() {
   int x, y;
 
@@ -117,152 +164,14 @@ void Reset() {
     }
   }
 
-  // Place pawns
-  printf("Initializing pawns\n");
-  for (x = 0; x < 8; x++) {
-    _whitePieces[x] = (struct Piece){
-        .player = WhitePlayer,
-        .type = Pawn,
-        .square = (Vector2){x, 6},
-    };
-    _blackPieces[x] = (struct Piece){
-        .player = BlackPlayer,
-        .type = Pawn,
-        .square = (Vector2){x, 1},
-    };
-    _board.pieces[x][6] = &_whitePieces[x];
-    _board.pieces[x][1] = &_blackPieces[x];
-  }
+  printf("Initializing white pieces\n");
+  resetPlayerPieces(WhitePlayer, _whitePieces);
 
-  // Place rooks
-  printf("Initializing rooks\n");
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Rook,
-      .square = (Vector2){0, 7},
-  };
-  _board.pieces[0][7] = &_whitePieces[x];
+  printf("Initializing black pieces\n");
+  resetPlayerPieces(BlackPlayer, _blackPieces);
 
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Rook,
-      .square = (Vector2){0, 0},
-  };
-  _board.pieces[0][0] = &_blackPieces[x];
-
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Rook,
-      .square = (Vector2){7, 7},
-  };
-  _board.pieces[7][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Rook,
-      .square = (Vector2){7, 0},
-  };
-  _board.pieces[7][0] = &_blackPieces[x];
-
-  // Place knights
-  printf("Initializing knights\n");
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Knight,
-      .square = (Vector2){1, 7},
-  };
-  _board.pieces[1][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Knight,
-      .square = (Vector2){1, 0},
-  };
-  _board.pieces[1][0] = &_blackPieces[x];
-
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Knight,
-      .square = (Vector2){6, 7},
-  };
-  _board.pieces[6][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Knight,
-      .square = (Vector2){6, 0},
-  };
-  _board.pieces[6][0] = &_blackPieces[x];
-
-  // Place bishops
-  printf("Initializing bishops\n");
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Bishop,
-      .square = (Vector2){2, 7},
-  };
-  _board.pieces[2][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Bishop,
-      .square = (Vector2){2, 0},
-  };
-  _board.pieces[2][0] = &_blackPieces[x];
-
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Bishop,
-      .square = (Vector2){5, 7},
-  };
-  _board.pieces[5][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Bishop,
-      .square = (Vector2){5, 0},
-  };
-  _board.pieces[5][0] = &_blackPieces[x];
-
-  // Place kings
-  printf("Initializing kings\n");
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = King,
-      .square = (Vector2){4, 7},
-  };
-  _board.pieces[4][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = King,
-      .square = (Vector2){4, 0},
-  };
-  _board.pieces[4][0] = &_blackPieces[x];
-
-  // Place queens
-  printf("Initializing queens\n");
-  x++;
-  _whitePieces[x] = (struct Piece){
-      .player = WhitePlayer,
-      .type = Queen,
-      .square = (Vector2){3, 7},
-  };
-  _board.pieces[3][7] = &_whitePieces[x];
-
-  _blackPieces[x] = (struct Piece){
-      .player = BlackPlayer,
-      .type = Queen,
-      .square = (Vector2){3, 0},
-  };
-  _board.pieces[3][0] = &_blackPieces[x];
-
+  // Set positions for all pieces
+  printf("Setting piece positions\n");
   for (x = 0; x < 8; x++) {
     for (y = 0; y < 2; y++) {
       _board.pieces[x][y]->pos = (Vector2){
