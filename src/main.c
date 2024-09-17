@@ -83,7 +83,11 @@ void draw() {
       if ((x + y) % 2 == 0) {
         DrawRectangle(xPos, yPos, SQUARE_SIZE, SQUARE_SIZE, BoardSquareGreen);
       }
+    }
+  }
 
+  for (int y = 0; y < BOARD_SIZE; y++) {
+    for (int x = 0; x < BOARD_SIZE; x++) {
       // Get the piece in this position and draw it
       struct Piece *p = GetPieceInXYPosition(x, y);
       if (p != NULL) {
