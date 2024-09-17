@@ -6,6 +6,7 @@
 #define WINDOW_HEIGHT 640
 
 struct Piece *selected = NULL;
+Vector2 selectedOldPosition = {-1, -1};
 
 float clamp(float value, float min, float max) {
   const float t = value < min ? min : value;
@@ -17,22 +18,40 @@ void update() {
     Vector2 square = GetSquareOverlabByTheCursor();
     selected = GetPieceInXYPosition(square.x, square.y);
     if (selected != NULL) {
-      selected->pos = GetMousePosition();
-      printf("piece on square %f-%f was selected\n", selected->square.x,
-             selected->square.y);
+      if (selected->player == GetCurrentPlayer()) {
+        selectedOldPosition = selected->square;
+        selected->pos = GetMousePosition();
+        printf("piece on square %f-%f was selected\n", selected->square.x,
+               selected->square.y);
+      } else {
+        selected = NULL;
+      }
     }
   }
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
     if (selected != NULL) {
-      selected->pos = GetSquareOverlabByTheCursor();
-      selected->square = selected->pos;
-      selected->pos.x *= SQUARE_SIZE;
-      selected->pos.y *= SQUARE_SIZE;
+      if (selected->square.x != selectedOldPosition.x ||
+          selected->square.y != selectedOldPosition.y) {
+        Vector2 newSquare = GetSquareOverlabByTheCursor();
+        // _board.pieces[(int)selectedOldPosition.x][(int)selectedOldPosition.y]
+        // =
+        //     NULL;
+        // _board.pieces[(int)newSquare.x][(int)newSquare.y] = selected;
+        selected->square = newSquare;
+        selected->pos.x = newSquare.x * SQUARE_SIZE;
+        selected->pos.y = newSquare.y * SQUARE_SIZE;
+        printf("piece was released at %f-%f\n", selected->square.x,
+               selected->square.y);
+        selected = NULL;
+        NextPlayer();
+      } else {
+        printf("piece was released at it origial square %f-%f\n",
+               selected->square.x, selected->square.y);
 
-      printf("piece on square was released at %f-%f\n", selected->square.x,
-             selected->square.y);
-
-      selected = NULL;
+        selected->square = selectedOldPosition;
+        selected->pos.x = selectedOldPosition.x * SQUARE_SIZE;
+        selected->pos.y = selectedOldPosition.y * SQUARE_SIZE;
+      }
     }
   }
 
@@ -89,7 +108,6 @@ int main() {
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
   Init();
-  Reset();
 
   while (!WindowShouldClose()) {
     update();

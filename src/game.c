@@ -207,6 +207,17 @@ Texture2D *getPieceTexture(const struct Piece *piece) {
   return &(_blackPieceTextures[piece->type]);
 }
 
+enum Player GetCurrentPlayer() { return _currentPlayer; }
+
+enum Player NextPlayer() {
+  if (_currentPlayer == WhitePlayer)
+    _currentPlayer = BlackPlayer;
+  else
+    _currentPlayer = WhitePlayer;
+
+  return _currentPlayer;
+}
+
 // struct Moves GetPossibleMoves(struct Piece *piece) {
 //   if (piece == NULL)
 //     return (struct Moves){.size = 0};

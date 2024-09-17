@@ -46,6 +46,7 @@ static Texture2D _blackPieceTextures[6];
 static struct Piece _whitePieces[16];
 static struct Piece _blackPieces[16];
 static struct Board _board;
+static enum Player _currentPlayer = WhitePlayer;
 
 void Init();
 void Deinit();
@@ -54,5 +55,21 @@ struct Piece *GetPieceInXYPosition(unsigned x, unsigned y);
 Vector2 GetSquareOverlabByTheCursor();
 struct Moves GetPossibleMoves(struct Piece *piece);
 Texture2D *getPieceTexture(const struct Piece *piece);
+enum Player GetCurrentPlayer();
+enum Player NextPlayer();
+
+inline static void _debug_printBoard() {
+  for (int y = 0; y < 8; y++) {
+    for (int x = 0; x < 8; x++) {
+      if (_board.pieces[x][y] != NULL) {
+        printf(" %d-%d ", (int)_board.pieces[x][y]->square.x,
+               (int)_board.pieces[x][y]->square.y);
+      } else {
+        printf("       ");
+      }
+    }
+    printf("\n");
+  }
+}
 
 #endif // GAME_H
