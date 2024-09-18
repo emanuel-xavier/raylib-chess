@@ -7,6 +7,7 @@
 
 struct Piece *selected = NULL;
 Vector2 selectedOldPosition = {-1, -1};
+struct Game *game = NULL;
 
 float clamp(float value, float min, float max) {
   const float t = value < min ? min : value;
@@ -17,9 +18,9 @@ void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
     TraceLog(LOG_DEBUG, "Left mouse button pressed");
     Vector2 square = GetSquareOverlabByTheCursor();
-    selected = GetPieceInXYPosition(square.x, square.y);
+    selected = GetPieceInXYPosition(game, square.x, square.y);
     if (selected != NULL) {
-      if (selected->player == GetCurrentPlayer()) {
+      if (selected->player == GetCurrentPlayer(game)) {
         selectedOldPosition = selected->square;
         selected->pos = GetMousePosition();
         TraceLog(LOG_DEBUG, "piece on square %f-%f was selected",
@@ -28,6 +29,9 @@ void update() {
         TraceLog(LOG_DEBUG, "Can't move other player's piece");
         selected = NULL;
       }
+    } else {
+      TraceLog(LOG_DEBUG, "No piece on the square %d-%d", (int)square.x,
+               (int)square.y);
     }
   }
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
@@ -36,17 +40,11 @@ void update() {
       if (selected->square.x != selectedOldPosition.x ||
           selected->square.y != selectedOldPosition.y) {
         Vector2 newSquare = GetSquareOverlabByTheCursor();
-        // _board.pieces[(int)selectedOldPosition.x][(int)selectedOldPosition.y]
-        // =
-        //     NULL;
-        // _board.pieces[(int)newSquare.x][(int)newSquare.y] = selected;
-        selected->square = newSquare;
-        selected->pos.x = newSquare.x * SQUARE_SIZE;
-        selected->pos.y = newSquare.y * SQUARE_SIZE;
+        MovePiece(game, selected, &newSquare);
         TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
                  selected->square.y);
         selected = NULL;
-        NextPlayer();
+        NextPlayer(game);
       } else {
         TraceLog(LOG_DEBUG, "piece was released at it origial square %f-%f",
                  selected->square.x, selected->square.y);
@@ -92,7 +90,7 @@ void draw() {
   for (int y = 0; y < BOARD_SIZE; y++) {
     for (int x = 0; x < BOARD_SIZE; x++) {
       // Get the piece in this position and draw it
-      struct Piece *p = GetPieceInXYPosition(x, y);
+      struct Piece *p = GetPieceInXYPosition(game, x, y);
       if (p != NULL) {
         unsigned padding = (SQUARE_SIZE - PIECE_IMG_SIZE) / 2;
         DrawTexture(*GetPieceTexture(p), p->pos.x + padding, p->pos.y + padding,
@@ -115,7 +113,8 @@ int main() {
   SetTraceLogLevel(LOG_DEBUG);
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
-  Init();
+
+  game = NewGame();
 
   while (!WindowShouldClose()) {
     update();
@@ -123,7 +122,7 @@ int main() {
   }
 
   CloseWindow();
-  Deinit();
+  DeleteGame(game);
 
   return 0;
 }

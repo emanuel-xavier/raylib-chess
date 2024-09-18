@@ -1,31 +1,53 @@
 #include "game.h"
+#include <raylib.h>
 
-void Init() {
-  // Allocate memory for pieces matrix
-  _board.pieces = (struct Piece ***)malloc(8 * sizeof(struct Piece **));
-  if (_board.pieces == NULL) {
-    TraceLog(LOG_DEBUG, "Memory allocation failed - pieces matrix");
-    exit(1);
+struct Game *NewGame() {
+  TraceLog(LOG_DEBUG, "Allocating game structure");
+  struct Game *game = (struct Game *)malloc(sizeof(struct Game));
+  if (game == NULL) {
+    TraceLog(LOG_ERROR, "Failed to allocate memory for game");
+    return NULL;
+  }
+
+  TraceLog(LOG_DEBUG, "Allocating board structure");
+  game->board = (struct Board *)malloc(sizeof(struct Board));
+  if (game->board == NULL) {
+    TraceLog(LOG_ERROR, "Failed to allocate memory for board");
+    free(game);
+    return NULL;
+  }
+
+  TraceLog(LOG_DEBUG, "Allocating board pieces matrix");
+  game->board->pieces = (struct Piece ***)malloc(8 * sizeof(struct Piece **));
+  if (game->board->pieces == NULL) {
+    TraceLog(LOG_ERROR, "Failed to allocate memory for pieces matrix");
+    free(game->board);
+    free(game);
+    return NULL;
   }
 
   for (int i = 0; i < 8; i++) {
-    _board.pieces[i] = (struct Piece **)malloc(8 * sizeof(struct Piece *));
-    if (_board.pieces[i] == NULL) {
-      TraceLog(LOG_DEBUG, "Memory allocation failed - row(%d)", i);
-      for (int j = 0; j < i; j++) {
-        free(_board.pieces[j]);
+    game->board->pieces[i] =
+        (struct Piece **)malloc(8 * sizeof(struct Piece *));
+    if (game->board->pieces[i] == NULL) {
+      TraceLog(LOG_ERROR,
+               "Failed to allocate memory for row %d in pieces matrix", i);
+      for (int k = 0; k < i; k++) {
+        free(game->board->pieces[k]);
       }
-      free(_board.pieces);
-      exit(1);
+      free(game->board->pieces);
+      free(game->board);
+      free(game);
+      return NULL;
     }
 
     // Initialize each piece to NULL
     for (int j = 0; j < 8; j++) {
-      _board.pieces[i][j] = NULL;
+      game->board->pieces[i][j] = NULL;
     }
   }
 
-  _board.size = 8;
+  game->board->size = 8;
 
   // Load piece textures
   for (int i = 0; i < 6; i++) {
@@ -34,26 +56,28 @@ void Init() {
 
     const char *app_dir = GetApplicationDirectory();
     ChangeDirectory(app_dir);
-    TraceLog(LOG_DEBUG, "Loading piece img for index %d", i);
+
+    TraceLog(LOG_DEBUG, "Loading piece texture for index %d", i);
 
     // Load white piece texture
     sprintf(filePath, filePathFormatStr, "white", i);
     Image whitePieceImg = LoadImage(filePath);
     if (whitePieceImg.data == NULL) {
-      TraceLog(LOG_DEBUG, "Failed to load image from '%s'", filePath);
-      Deinit();
-      exit(1);
+      TraceLog(LOG_ERROR, "Failed to load white piece image from '%s'",
+               filePath);
+      DeleteGame(game);
+      return NULL;
     }
 
     // Load black piece texture
     sprintf(filePath, filePathFormatStr, "black", i);
     Image blackPieceImg = LoadImage(filePath);
     if (blackPieceImg.data == NULL) {
-      TraceLog(LOG_DEBUG, "Failed to load image from '%s'", filePath);
-      UnloadImage(
-          whitePieceImg); // Unload the white image since it was already loaded
-      Deinit();
-      exit(1);
+      TraceLog(LOG_ERROR, "Failed to load black piece image from '%s'",
+               filePath);
+      UnloadImage(whitePieceImg);
+      DeleteGame(game);
+      return NULL;
     }
 
     // Resize and load textures
@@ -64,11 +88,11 @@ void Init() {
 
     if (!IsTextureReady(whitePieceTexture) ||
         !IsTextureReady(blackPieceTexture)) {
-      TraceLog(LOG_DEBUG, "Texture is not ready");
+      TraceLog(LOG_ERROR, "Failed to load textures properly");
       UnloadImage(whitePieceImg);
       UnloadImage(blackPieceImg);
-      Deinit();
-      exit(1);
+      DeleteGame(game);
+      return NULL;
     }
 
     UnloadImage(whitePieceImg);
@@ -76,25 +100,41 @@ void Init() {
 
     _whitePieceTextures[i] = whitePieceTexture;
     _blackPieceTextures[i] = blackPieceTexture;
+
+    TraceLog(LOG_DEBUG, "Successfully loaded textures for index %d", i);
   }
 
-  Reset();
+  ResetDefaultConfiguration(game);
+  TraceLog(LOG_DEBUG, "Game initialization complete");
+
+  return game;
 }
 
-void Deinit() {
+void DeleteGame(struct Game *game) {
+  if (game == NULL) {
+    TraceLog(LOG_INFO, "Attempted to delete a NULL game pointer");
+    return;
+  }
+
+  TraceLog(LOG_DEBUG, "Deleting game structure");
+
   // Deallocate memory for pieces
-  if (_board.pieces != NULL) {
-    for (int i = 0; i < 8; i++) {
-      if (_board.pieces[i] != NULL) {
-        free(_board.pieces[i]);
-        _board.pieces[i] = NULL;
+  TraceLog(LOG_DEBUG, "Deleting board pieces matrix");
+  if (game->board != NULL) {
+    if (game->board->pieces != NULL) {
+      for (int i = 0; i < 8; i++) {
+        if (game->board->pieces[i] != NULL) {
+          TraceLog(LOG_DEBUG, "Freeing row %d of pieces matrix", i);
+          free(game->board->pieces[i]);
+        }
       }
+      free(game->board->pieces);
     }
-    free(_board.pieces);
-    _board.pieces = NULL;
+    free(game->board);
   }
 
   // Unload textures
+  TraceLog(LOG_DEBUG, "Unloading textures");
   for (int i = 0; i < 6; i++) {
     if (IsTextureReady(_whitePieceTextures[i])) {
       UnloadTexture(_whitePieceTextures[i]);
@@ -105,14 +145,21 @@ void Deinit() {
       _blackPieceTextures[i] = (Texture2D){0};
     }
   }
+
+  TraceLog(LOG_DEBUG, "Freeing game structure");
+  free(game);
+
+  TraceLog(LOG_DEBUG, "Game deletion complete");
 }
 
-void resetPlayerPieces(enum Player player, struct Piece *pieces) {
+void resetPlayerPieces(struct Game *game, enum Player player,
+                       struct Piece *pieces) {
   int x = 0, y;
   int backRowY = (player == WhitePlayer) ? 7 : 0;
   int pawnRowY = (player == WhitePlayer) ? 6 : 1;
   int piecesOrder[3] = {Rook, Knight, Bishop};
 
+  TraceLog(LOG_DEBUG, "Placing pawns for player %d", player);
   // Place pawns
   for (x = 0; x < 8; x++) {
     pieces[x] = (struct Piece){
@@ -120,9 +167,12 @@ void resetPlayerPieces(enum Player player, struct Piece *pieces) {
         .type = Pawn,
         .square = (Vector2){x, pawnRowY},
     };
-    _board.pieces[x][pawnRowY] = &pieces[x];
+    game->board->pieces[x][pawnRowY] = &pieces[x];
+    TraceLog(LOG_DEBUG, "Placed pawn at (%d, %d)", x, pawnRowY);
   }
 
+  TraceLog(LOG_DEBUG, "Initializing rooks, knights, and bishops for player %d",
+           player);
   // Initialize rooks, knights, and bishops
   for (y = 0; y < 3; y++) {
     for (int k = 0; k < 2; k++, x++) {
@@ -132,18 +182,23 @@ void resetPlayerPieces(enum Player player, struct Piece *pieces) {
           .type = piecesOrder[y],
           .square = (Vector2){yPos, backRowY},
       };
-      _board.pieces[yPos][backRowY] = &pieces[x];
+      game->board->pieces[yPos][backRowY] = &pieces[x];
+      TraceLog(LOG_DEBUG, "Placed %d at (%d, %d)", piecesOrder[y], yPos,
+               backRowY);
     }
   }
 
+  TraceLog(LOG_DEBUG, "Placing king for player %d", player);
   // Place king
   pieces[x] = (struct Piece){
       .player = player,
       .type = King,
       .square = (Vector2){4, backRowY},
   };
-  _board.pieces[4][backRowY] = &pieces[x];
+  game->board->pieces[4][backRowY] = &pieces[x];
+  TraceLog(LOG_DEBUG, "Placed king at (4, %d)", backRowY);
 
+  TraceLog(LOG_DEBUG, "Placing queen for player %d", player);
   // Place queen
   x++;
   pieces[x] = (struct Piece){
@@ -151,47 +206,59 @@ void resetPlayerPieces(enum Player player, struct Piece *pieces) {
       .type = Queen,
       .square = (Vector2){3, backRowY},
   };
-  _board.pieces[3][backRowY] = &pieces[x];
+  game->board->pieces[3][backRowY] = &pieces[x];
+  TraceLog(LOG_DEBUG, "Placed queen at (3, %d)", backRowY);
 }
 
-void Reset() {
+void ResetDefaultConfiguration(struct Game *game) {
   int x, y;
 
+  TraceLog(LOG_DEBUG, "Initializing empty squares");
   // Initialize empty squares
   for (y = 0; y < 8; y++) {
     for (x = 0; x < 8; x++) {
-      _board.pieces[y][x] = NULL;
+      game->board->pieces[y][x] = NULL;
     }
   }
 
   TraceLog(LOG_DEBUG, "Initializing white pieces");
-  resetPlayerPieces(WhitePlayer, _whitePieces);
+  resetPlayerPieces(game, WhitePlayer, game->_whitePieces);
 
   TraceLog(LOG_DEBUG, "Initializing black pieces");
-  resetPlayerPieces(BlackPlayer, _blackPieces);
+  resetPlayerPieces(game, BlackPlayer, game->_blackPieces);
 
-  // Set positions for all pieces
   TraceLog(LOG_DEBUG, "Setting piece positions");
+  // Set positions for all pieces
   for (x = 0; x < 8; x++) {
     for (y = 0; y < 2; y++) {
-      _board.pieces[x][y]->pos = (Vector2){
-          .x = _board.pieces[x][y]->square.x * (float)SQUARE_SIZE,
-          .y = _board.pieces[x][y]->square.y * (float)SQUARE_SIZE,
-      };
+      if (game->board->pieces[x][y] != NULL) {
+        game->board->pieces[x][y]->pos = (Vector2){
+            .x = game->board->pieces[x][y]->square.x * (float)SQUARE_SIZE,
+            .y = game->board->pieces[x][y]->square.y * (float)SQUARE_SIZE,
+        };
+        TraceLog(LOG_DEBUG, "Set position for piece at (%d, %d)", x, y);
+      }
     }
     for (y = 6; y < 8; y++) {
-      _board.pieces[x][y]->pos = (Vector2){
-          .x = _board.pieces[x][y]->square.x * (float)SQUARE_SIZE,
-          .y = _board.pieces[x][y]->square.y * (float)SQUARE_SIZE,
-      };
+      if (game->board->pieces[x][y] != NULL) {
+        game->board->pieces[x][y]->pos = (Vector2){
+            .x = game->board->pieces[x][y]->square.x * (float)SQUARE_SIZE,
+            .y = game->board->pieces[x][y]->square.y * (float)SQUARE_SIZE,
+        };
+        TraceLog(LOG_DEBUG, "Set position for piece at (%d, %d)", x, y);
+      }
     }
   }
 
-  TraceLog(LOG_DEBUG, "Board reset");
+  TraceLog(LOG_DEBUG, "Setting current player to WhitePlayer");
+  game->_currentPlayer = WhitePlayer;
+
+  TraceLog(LOG_DEBUG, "Game reset complete");
 }
 
-struct Piece *GetPieceInXYPosition(unsigned x, unsigned y) {
-  return _board.pieces[x][y];
+struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
+                                   unsigned y) {
+  return game->board->pieces[x][y];
 }
 
 Vector2 GetSquareOverlabByTheCursor() {
@@ -207,15 +274,47 @@ Texture2D *GetPieceTexture(const struct Piece *piece) {
   return &(_blackPieceTextures[piece->type]);
 }
 
-enum Player GetCurrentPlayer() { return _currentPlayer; }
+enum Player GetCurrentPlayer(const struct Game *game) {
+  return game->_currentPlayer;
+}
 
-enum Player NextPlayer() {
-  if (_currentPlayer == WhitePlayer)
-    _currentPlayer = BlackPlayer;
-  else
-    _currentPlayer = WhitePlayer;
+enum Player NextPlayer(struct Game *game) {
+  TraceLog(LOG_DEBUG, "Current player: %d", game->_currentPlayer);
 
-  return _currentPlayer;
+  if (game->_currentPlayer == WhitePlayer) {
+    game->_currentPlayer = BlackPlayer;
+    TraceLog(LOG_DEBUG, "Switching to BlackPlayer");
+  } else {
+    game->_currentPlayer = WhitePlayer;
+    TraceLog(LOG_DEBUG, "Switching to WhitePlayer");
+  }
+
+  TraceLog(LOG_DEBUG, "Next player: %d", game->_currentPlayer);
+  return game->_currentPlayer;
+}
+
+void MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
+  Vector2 oldPos = piece->square;
+
+  TraceLog(LOG_DEBUG, "Moving piece from (%d, %d) to (%d, %d)", (int)oldPos.x,
+           (int)oldPos.y, (int)pos->x, (int)pos->y);
+
+  piece->square.x = pos->x;
+  piece->square.y = pos->y;
+
+  piece->pos.x = pos->x * SQUARE_SIZE;
+  piece->pos.y = pos->y * SQUARE_SIZE;
+
+  // Update board with new position
+  TraceLog(
+      LOG_DEBUG,
+      "Updating board position: setting (%d, %d) to piece and (%d, %d) to NULL",
+      (int)pos->x, (int)pos->y, (int)oldPos.x, (int)oldPos.y);
+
+  game->board->pieces[(unsigned)pos->x][(unsigned)pos->y] = piece;
+  game->board->pieces[(unsigned)oldPos.x][(unsigned)oldPos.y] = NULL;
+
+  TraceLog(LOG_DEBUG, "Piece moved to new position");
 }
 
 // struct Moves GetPossibleMoves(struct Piece *piece) {

@@ -41,35 +41,27 @@ struct Moves {
   unsigned size;
 };
 
+struct Game {
+  struct Board *board;
+  struct Piece _whitePieces[16];
+  struct Piece _blackPieces[16];
+  enum Player _currentPlayer;
+};
+
 static Texture2D _whitePieceTextures[6];
 static Texture2D _blackPieceTextures[6];
-static struct Piece _whitePieces[16];
-static struct Piece _blackPieces[16];
-static struct Board _board;
-static enum Player _currentPlayer = WhitePlayer;
 
-void Init();
-void Deinit();
-void Reset();
-struct Piece *GetPieceInXYPosition(unsigned x, unsigned y);
-Vector2 GetSquareOverlabByTheCursor();
-struct Moves GetPossibleMoves(struct Piece *piece);
+struct Game *NewGame();
+void DeleteGame(struct Game *game);
+void ResetDefaultConfiguration(struct Game *game);
+struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
+                                   unsigned y);
 Texture2D *GetPieceTexture(const struct Piece *piece);
-enum Player GetCurrentPlayer();
-enum Player NextPlayer();
+void MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos);
+struct Moves GetPossibleMoves(const struct Game *game, struct Piece *piece);
+enum Player GetCurrentPlayer(const struct Game *game);
+enum Player NextPlayer(struct Game *Game);
 
-static inline void _debug_printBoard() {
-  for (int y = 0; y < 8; y++) {
-    for (int x = 0; x < 8; x++) {
-      if (_board.pieces[x][y] != NULL) {
-        printf(" %d-%d ", (int)_board.pieces[x][y]->square.x,
-               (int)_board.pieces[x][y]->square.y);
-      } else {
-        printf("       ");
-      }
-    }
-    printf("\n");
-  }
-}
+Vector2 GetSquareOverlabByTheCursor();
 
 #endif // GAME_H
