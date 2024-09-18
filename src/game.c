@@ -262,10 +262,18 @@ struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
 }
 
 Vector2 GetSquareOverlabByTheCursor() {
-  return (Vector2){
-      .x = (int)(GetMouseX() / SQUARE_SIZE),
-      .y = (int)(GetMouseY() / SQUARE_SIZE),
+  float mouseX = GetMouseX();
+  float mouseY = GetMouseY();
+
+  Vector2 pos = (Vector2){
+      .x = (int)(mouseX / SQUARE_SIZE),
+      .y = (int)(mouseY / SQUARE_SIZE),
   };
+
+  TraceLog(LOG_DEBUG,
+           "Raw Mouse position: (%d, %d) - Square position: (%d, %d)",
+           (int)mouseX, (int)mouseY, (int)pos.x, (int)pos.y);
+  return pos;
 }
 
 Texture2D *GetPieceTexture(const struct Piece *piece) {
@@ -279,7 +287,6 @@ enum Player GetCurrentPlayer(const struct Game *game) {
 }
 
 enum Player NextPlayer(struct Game *game) {
-  TraceLog(LOG_DEBUG, "Current player: %d", game->_currentPlayer);
 
   if (game->_currentPlayer == WhitePlayer) {
     game->_currentPlayer = BlackPlayer;
@@ -289,7 +296,8 @@ enum Player NextPlayer(struct Game *game) {
     TraceLog(LOG_DEBUG, "Switching to WhitePlayer");
   }
 
-  TraceLog(LOG_DEBUG, "Next player: %d", game->_currentPlayer);
+  TraceLog(LOG_DEBUG, "Current player: %s",
+           (game->_currentPlayer == WhitePlayer ? "White" : "Black"));
   return game->_currentPlayer;
 }
 
@@ -303,6 +311,10 @@ bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
 
   Vector2 oldPos = piece->square;
 
+  if (oldPos.x == pos->x && oldPos.y == pos->y) {
+    TraceLog(LOG_DEBUG, "Cant move the piece the it current position");
+    return false;
+  }
   TraceLog(LOG_DEBUG, "Moving piece from (%d, %d) to (%d, %d)", (int)oldPos.x,
            (int)oldPos.y, (int)pos->x, (int)pos->y);
 
@@ -321,8 +333,16 @@ bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
   piece->pos.x = pos->x * SQUARE_SIZE;
   piece->pos.y = pos->y * SQUARE_SIZE;
 
+#ifdef DEBUG_MODE
+  PrintFormattedBoard(game);
+#endif
+
   game->board->pieces[(unsigned)pos->x][(unsigned)pos->y] = piece;
   game->board->pieces[(unsigned)oldPos.x][(unsigned)oldPos.y] = NULL;
+
+#ifdef DEBUG_MODE
+  PrintFormattedBoard(game);
+#endif
 
   TraceLog(LOG_DEBUG, "Piece moved to new position: (%d, %d)", (int)pos->x,
            (int)pos->y);
