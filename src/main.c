@@ -16,6 +16,9 @@ float clamp(float value, float min, float max) {
 
 void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+#ifdef DEBUG_MODE
+    PrintFormattedBoard(game);
+#endif
     TraceLog(LOG_DEBUG, "Left mouse button pressed");
     Vector2 square = GetSquareOverlabByTheCursor();
     selected = GetPieceInXYPosition(game, square.x, square.y);
@@ -36,16 +39,21 @@ void update() {
   }
   if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
     TraceLog(LOG_DEBUG, "Left mouse button released");
+    bool couldMove = false;
     if (selected != NULL) {
       if (selected->square.x != selectedOldPosition.x ||
           selected->square.y != selectedOldPosition.y) {
         Vector2 newSquare = GetSquareOverlabByTheCursor();
-        MovePiece(game, selected, &newSquare);
-        TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
-                 selected->square.y);
-        selected = NULL;
-        NextPlayer(game);
-      } else {
+        if (MovePiece(game, selected, &newSquare)) {
+          TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
+                   selected->square.y);
+          NextPlayer(game);
+          couldMove = true;
+        } else {
+          TraceLog(LOG_DEBUG, "Can't move piece");
+        }
+      }
+      if (!couldMove) {
         TraceLog(LOG_DEBUG, "piece was released at it origial square %f-%f",
                  selected->square.x, selected->square.y);
 
@@ -53,7 +61,11 @@ void update() {
         selected->pos.x = selectedOldPosition.x * SQUARE_SIZE;
         selected->pos.y = selectedOldPosition.y * SQUARE_SIZE;
       }
+      selected = NULL;
     }
+#ifdef DEBUG_MODE
+    PrintFormattedBoard(game);
+#endif
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -110,7 +122,9 @@ void draw() {
 
 int main() {
 
+#ifdef DEBUG_MODE
   SetTraceLogLevel(LOG_DEBUG);
+#endif
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
 
