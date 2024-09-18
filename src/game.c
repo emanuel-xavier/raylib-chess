@@ -293,28 +293,98 @@ enum Player NextPlayer(struct Game *game) {
   return game->_currentPlayer;
 }
 
-void MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
+#include <stdio.h>
+
+bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
+  if (game == NULL || piece == NULL || pos == NULL) {
+    TraceLog(LOG_ERROR, "Invalid parameters passed to MovePiece");
+    return false;
+  }
+
   Vector2 oldPos = piece->square;
 
   TraceLog(LOG_DEBUG, "Moving piece from (%d, %d) to (%d, %d)", (int)oldPos.x,
            (int)oldPos.y, (int)pos->x, (int)pos->y);
 
-  piece->square.x = pos->x;
-  piece->square.y = pos->y;
+  // Ensure new and old positions are within bounds
+  if ((unsigned)pos->x >= game->board->size ||
+      (unsigned)pos->y >= game->board->size ||
+      (unsigned)oldPos.x >= game->board->size ||
+      (unsigned)oldPos.y >= game->board->size) {
+    TraceLog(LOG_ERROR, "Move out of bounds: old (%d, %d) new (%d, %d)",
+             (int)oldPos.x, (int)oldPos.y, (int)pos->x, (int)pos->y);
+    return false;
+  }
 
+  // Update piece position
+  piece->square = *pos;
   piece->pos.x = pos->x * SQUARE_SIZE;
   piece->pos.y = pos->y * SQUARE_SIZE;
-
-  // Update board with new position
-  TraceLog(
-      LOG_DEBUG,
-      "Updating board position: setting (%d, %d) to piece and (%d, %d) to NULL",
-      (int)pos->x, (int)pos->y, (int)oldPos.x, (int)oldPos.y);
 
   game->board->pieces[(unsigned)pos->x][(unsigned)pos->y] = piece;
   game->board->pieces[(unsigned)oldPos.x][(unsigned)oldPos.y] = NULL;
 
-  TraceLog(LOG_DEBUG, "Piece moved to new position");
+  TraceLog(LOG_DEBUG, "Piece moved to new position: (%d, %d)", (int)pos->x,
+           (int)pos->y);
+
+  return true;
+}
+
+// Function to get character representation for a piece
+char getPieceChar(const struct Piece *piece) {
+  if (piece == NULL)
+    return '.';
+
+  char playerChar =
+      (piece->player == WhitePlayer) ? WHITE_PLAYER : BLACK_PLAYER;
+  char typeChar;
+
+  switch (piece->type) {
+  case Pawn:
+    typeChar = PAWN;
+    break;
+  case Rook:
+    typeChar = ROOK;
+    break;
+  case Knight:
+    typeChar = KNIGHT;
+    break;
+  case Bishop:
+    typeChar = BISHOP;
+    break;
+  case Queen:
+    typeChar = QUEEN;
+    break;
+  case King:
+    typeChar = KING;
+    break;
+  default:
+    typeChar = '.';
+    break;
+  }
+
+  // Combine player and type into a single character for printing
+  return (piece->player == WhitePlayer)
+             ? typeChar
+             : typeChar + 32; // Lowercase for BlackPlayer
+}
+
+// Function to print the formatted board
+void PrintFormattedBoard(const struct Game *game) {
+  if (game == NULL || game->board == NULL || game->board->pieces == NULL) {
+    printf("Invalid game state\n");
+    return;
+  }
+
+  printf("  a b c d e f g h\n"); // Column labels
+  for (int y = 7; y >= 0; y--) {
+    printf("%d ", y + 1); // Row labels
+    for (int x = 0; x < 8; x++) {
+      char pieceChar = getPieceChar(game->board->pieces[x][y]);
+      printf("%c ", pieceChar);
+    }
+    printf("\n");
+  }
 }
 
 // struct Moves GetPossibleMoves(struct Piece *piece) {

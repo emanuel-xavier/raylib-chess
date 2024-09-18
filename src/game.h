@@ -5,6 +5,8 @@
 #define SQUARE_SIZE 80
 #define BOARD_SIZE 8
 
+#define DEBUG_MODE
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -57,11 +59,25 @@ void ResetDefaultConfiguration(struct Game *game);
 struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
                                    unsigned y);
 Texture2D *GetPieceTexture(const struct Piece *piece);
-void MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos);
+bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos);
 struct Moves GetPossibleMoves(const struct Game *game, struct Piece *piece);
 enum Player GetCurrentPlayer(const struct Game *game);
 enum Player NextPlayer(struct Game *Game);
 
 Vector2 GetSquareOverlabByTheCursor();
+
+#define WHITE_PLAYER 'W'
+#define BLACK_PLAYER 'B'
+
+#define PAWN 'P'
+#define ROOK 'R'
+#define KNIGHT 'N'
+#define BISHOP 'B'
+#define QUEEN 'Q'
+#define KING 'K'
+
+// Function to get character representation for a piece
+char getPieceChar(const struct Piece *piece);
+void PrintFormattedBoard(const struct Game *game);
 
 #endif // GAME_H
