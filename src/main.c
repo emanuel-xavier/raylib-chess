@@ -114,6 +114,7 @@ int main() {
 #ifdef DEBUG_MODE
   SetTraceLogLevel(LOG_DEBUG);
 #endif
+
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
 
@@ -125,6 +126,7 @@ int main() {
   }
 
   CloseWindow();
+
   DeleteGame(game);
 
   return 0;

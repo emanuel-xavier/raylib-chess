@@ -166,6 +166,7 @@ void resetPlayerPieces(struct Game *game, enum Player player,
         .player = player,
         .type = Pawn,
         .square = (Vector2){x, pawnRowY},
+        .moveCounter = 0,
     };
     game->board->pieces[x][pawnRowY] = &pieces[x];
     TraceLog(LOG_DEBUG, "Placed pawn at (%d, %d)", x, pawnRowY);
@@ -328,25 +329,41 @@ bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
     return false;
   }
 
+  moves.size = 0;
+  GetPossibleMoves(&moves, game->board, piece);
+  bool validMove = false;
+  for (int i = 0; i < moves.size; i++) {
+    if (moves.squares[i].x == pos->x && moves.squares[i].y == pos->y) {
+      TraceLog(LOG_DEBUG, "Valid move");
+      validMove = true;
+      break;
+    }
+  }
+  if (!validMove) {
+    TraceLog(LOG_DEBUG, "Invalid moves");
+    return false;
+  }
+
   // Update piece position
   piece->square = *pos;
   piece->pos.x = pos->x * SQUARE_SIZE;
   piece->pos.y = pos->y * SQUARE_SIZE;
 
-#ifdef DEBUG_MODE
+#ifdef PRINT_BOARD
   PrintFormattedBoard(game);
 #endif
 
   game->board->pieces[(unsigned)pos->x][(unsigned)pos->y] = piece;
   game->board->pieces[(unsigned)oldPos.x][(unsigned)oldPos.y] = NULL;
 
-#ifdef DEBUG_MODE
+#ifdef PRINT_BOARD
   PrintFormattedBoard(game);
 #endif
 
   TraceLog(LOG_DEBUG, "Piece moved to new position: (%d, %d)", (int)pos->x,
            (int)pos->y);
 
+  piece->moveCounter++;
   return true;
 }
 
@@ -407,18 +424,229 @@ void PrintFormattedBoard(const struct Game *game) {
   }
 }
 
-// struct Moves GetPossibleMoves(struct Piece *piece) {
-//   if (piece == NULL)
-//     return (struct Moves){.size = 0};
-//
-//   switch (piece->type) {
-//   case Pawn: {
-//     if (piece->player == WhitePlayer) {
-//
-//     } else {
-//     }
-//
-//     break;
-//   }
-//   }
-// }
+void getVerticalMovesDFS(struct Moves *moves, const struct Board *board,
+                         const struct Piece *piece, const int limit) {
+  if (piece == NULL) {
+    TraceLog(LOG_DEBUG, "No piece on this position");
+    return;
+  }
+
+  int directions[4][2] = {
+      {-1, 1},  // left-up
+      {1, 1},   // right-down
+      {-1, -1}, // left-down
+      {1, -1},  // right-up
+  };
+
+  for (int d = 0; d < 4; d++) {
+    int x = piece->square.x;
+    int y = piece->square.y;
+    int distance = 0;
+    while (x >= 0 && x < 8 && y >= 0 && y < 8 && distance < limit) {
+      TraceLog(LOG_DEBUG, "Checking position (%d, %d)", x, y);
+      distance++;
+
+      x += directions[d][0];
+      y += directions[d][1];
+
+      if (x < 0 || x >= 8 || y < 0 || y >= 8) {
+        TraceLog(LOG_DEBUG, "Position (%d, %d) is out of bounds", x, y);
+        break;
+      }
+
+      if (piece->square.x == x && piece->square.y == y) {
+        TraceLog(LOG_DEBUG, "The current location isn't a valid move");
+        continue;
+      }
+
+      struct Piece *p = board->pieces[x][y];
+      if (p != NULL) {
+        if (p->player == piece->player) {
+          TraceLog(LOG_DEBUG, "Reach current player piece on (%d, %d)", x, y);
+          break;
+        }
+        TraceLog(LOG_DEBUG, "Reach other player piece on (%d, %d)", x, y);
+        moves->squares[moves->size++] = p->square;
+        break;
+      }
+      TraceLog(LOG_DEBUG, "ADDING MOVE(%d) TO THE LIST - CAPACITY",
+               moves->size);
+      moves->squares[moves->size] = (struct Vector2){.x = x, .y = y};
+      moves->size++;
+    }
+  }
+}
+
+void getStraightMovesDFS(struct Moves *moves, const struct Board *board,
+                         const struct Piece *piece, const int limit) {
+  if (piece == NULL) {
+    TraceLog(LOG_DEBUG, "No piece on this position");
+    return;
+  }
+
+  int directions[4][2] = {
+      {0, -1}, // up
+      {1, 0},  // right
+      {0, 1},  // down
+      {-1, 0}, // left
+  };
+
+  for (int d = 0; d < 4; d++) {
+    int x = piece->square.x;
+    int y = piece->square.y;
+    int distance = 0;
+    while (x >= 0 && x < 8 && y >= 0 && y < 8 && distance < limit) {
+      TraceLog(LOG_DEBUG, "Checking position (%d, %d)", x, y);
+      distance++;
+
+      x += directions[d][0];
+      y += directions[d][1];
+
+      // Boundary check
+      if (x < 0 || x >= 8 || y < 0 || y >= 8) {
+        TraceLog(LOG_DEBUG, "Position (%d, %d) is out of bounds", x, y);
+        break;
+      }
+
+      if (piece->square.x == x && piece->square.y == y) {
+        TraceLog(LOG_DEBUG, "The current location isn't a valid move");
+        continue;
+      }
+
+      struct Piece *p = board->pieces[x][y];
+      if (p != NULL) {
+        if (p->player == piece->player) {
+          TraceLog(LOG_DEBUG, "Reach current player piece on (%d, %d)", x, y);
+          break;
+        }
+        TraceLog(LOG_DEBUG, "Reach other player piece on (%d, %d)", x, y);
+        moves->squares[moves->size++] = p->square;
+        break;
+      }
+      moves->squares[moves->size++] = (struct Vector2){.x = x, .y = y};
+    }
+  }
+}
+
+void getKnightPossibleMoves(struct Moves *moves, const struct Board *board,
+                            const struct Piece *piece) {
+  TraceLog(LOG_DEBUG, "Geting knight possibles move");
+  static Vector2 possibleMoves[] = {
+      (Vector2){.x = 2.0, .y = 1.0},  (Vector2){.x = 2.0, .y = -1.0},
+      (Vector2){.x = -2.0, .y = 1.0}, (Vector2){.x = -2.0, .y = -1.0},
+      (Vector2){.x = 1.0, .y = 2.0},  (Vector2){.x = 1.0, .y = -2.0},
+      (Vector2){.x = -1.0, .y = 2.0}, (Vector2){.x = -1.0, .y = -2.0},
+  };
+
+  int x = piece->square.x;
+  int y = piece->square.y;
+
+  TraceLog(LOG_DEBUG, "Possible knight move from (%d, %d)", x, y);
+  for (int i = 0; i < 8; i++) {
+    int nextX = x + possibleMoves[i].x;
+    int nextY = y + possibleMoves[i].y;
+
+    if ((nextX < 0 || nextX >= 8) || (nextY < 0 || nextY >= 8))
+      continue;
+
+    struct Piece *pieceOnTheTargetSquare = board->pieces[nextX][nextY];
+    if (pieceOnTheTargetSquare != NULL &&
+        pieceOnTheTargetSquare->player == piece->player) {
+      TraceLog(LOG_DEBUG, "Can't overwrite your own pieces");
+      continue;
+    }
+
+    TraceLog(LOG_DEBUG, "\t %d - Possible move (%d, %d)", moves->size, nextX,
+             nextY);
+    moves->squares[moves->size] = (Vector2){.x = nextX, .y = nextY};
+    moves->size++;
+  }
+}
+
+void getPawnPossibleMoves(struct Moves *moves, const struct Board *board,
+                          const struct Piece *piece) {
+  int x = (int)piece->square.x;
+  int y = (int)piece->square.y;
+  int fowardMove = piece->player == WhitePlayer ? -1 : +1;
+
+  // Double move
+  int foward = y + fowardMove * 2;
+  bool outOfBound = (foward < 0 || foward >= 8);
+  if (!outOfBound && piece->moveCounter == 0 &&
+      board->pieces[x][foward] == NULL) {
+    moves->squares[moves->size++] = (Vector2){.x = x, .y = foward};
+  }
+
+  // Single move
+  foward = y + fowardMove;
+  outOfBound = (foward < 0 || foward >= 8);
+  if (!outOfBound && board->pieces[x][foward] == NULL) {
+    moves->squares[moves->size++] = (Vector2){.x = x, .y = foward};
+  }
+
+  // Capture moves (diagonal)
+  int possibleMoves[2][2] = {
+      {x + 1, foward},
+      {x - 1, foward},
+  };
+
+  for (int i = 0; i < 2; i++) {
+    int newX = possibleMoves[i][0];
+    outOfBound = (foward < 0 || foward >= 8 || newX < 0 || newX >= 8);
+
+    if (!outOfBound) {
+      struct Piece *targetPiece = board->pieces[newX][foward];
+      if (targetPiece != NULL && targetPiece->player != piece->player) {
+        moves->squares[moves->size++] = (Vector2){.x = newX, .y = foward};
+      }
+    }
+  }
+
+  // TODO: En Passant
+}
+
+void GetPossibleMoves(struct Moves *moves, const struct Board *board,
+                      const struct Piece *piece) {
+  moves->size = 0;
+  if (piece == NULL) {
+    return;
+  }
+
+  switch (piece->type) {
+  case Knight: {
+    TraceLog(LOG_DEBUG, "Knight move");
+    getKnightPossibleMoves(moves, board, piece);
+    break;
+  }
+  case Bishop: {
+    TraceLog(LOG_DEBUG, "Bishop move");
+    getVerticalMovesDFS(moves, board, piece, 9999);
+    break;
+  }
+  case Rook: {
+    TraceLog(LOG_DEBUG, "Rook move");
+    getStraightMovesDFS(moves, board, piece, 9999);
+    break;
+  }
+  case Queen: {
+    TraceLog(LOG_DEBUG, "Queen move");
+    getStraightMovesDFS(moves, board, piece, 9999);
+    getVerticalMovesDFS(moves, board, piece, 9999);
+    break;
+  }
+  case King: {
+    TraceLog(LOG_DEBUG, "King move");
+    getStraightMovesDFS(moves, board, piece, 1);
+    getVerticalMovesDFS(moves, board, piece, 1);
+    // TODO: casting
+    break;
+  }
+  case Pawn: {
+    TraceLog(LOG_DEBUG, "Pawn move");
+    getPawnPossibleMoves(moves, board, piece);
+    break;
+  }
+  default:
+    TraceLog(LOG_DEBUG, "This piece does not has implementation for this");
+  }
+}
