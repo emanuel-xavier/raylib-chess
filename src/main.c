@@ -6,7 +6,6 @@
 #define WINDOW_HEIGHT 640
 
 struct Piece *selected = NULL;
-Vector2 selectedOldPosition = {-1, -1};
 struct Game *game = NULL;
 
 float clamp(float value, float min, float max) {
@@ -16,18 +15,14 @@ float clamp(float value, float min, float max) {
 
 void update() {
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-#ifdef DEBUG_MODE
-    PrintFormattedBoard(game);
-#endif
     TraceLog(LOG_DEBUG, "Left mouse button pressed");
     Vector2 square = GetSquareOverlabByTheCursor();
     selected = GetPieceInXYPosition(game, square.x, square.y);
     if (selected != NULL) {
       if (selected->player == GetCurrentPlayer(game)) {
-        selectedOldPosition = selected->square;
         selected->pos = GetMousePosition();
-        TraceLog(LOG_DEBUG, "piece on square %f-%f was selected",
-                 selected->square.x, selected->square.y);
+        TraceLog(LOG_DEBUG, "piece on square %d-%d was selected",
+                 (int)selected->square.x, (int)selected->square.y);
       } else {
         TraceLog(LOG_DEBUG, "Can't move other player's piece");
         selected = NULL;
@@ -41,31 +36,26 @@ void update() {
     TraceLog(LOG_DEBUG, "Left mouse button released");
     bool couldMove = false;
     if (selected != NULL) {
-      if (selected->square.x != selectedOldPosition.x ||
-          selected->square.y != selectedOldPosition.y) {
-        Vector2 newSquare = GetSquareOverlabByTheCursor();
-        if (MovePiece(game, selected, &newSquare)) {
-          TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
-                   selected->square.y);
-          NextPlayer(game);
-          couldMove = true;
-        } else {
-          TraceLog(LOG_DEBUG, "Can't move piece");
-        }
+      Vector2 newSquare = GetSquareOverlabByTheCursor();
+      TraceLog(LOG_DEBUG, "next square %f-%f", newSquare.x, newSquare.y);
+
+      if (MovePiece(game, selected, &newSquare)) {
+        TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
+                 selected->square.y);
+        NextPlayer(game);
+        couldMove = true;
+      } else {
+        TraceLog(LOG_DEBUG, "Can't move piece");
       }
       if (!couldMove) {
         TraceLog(LOG_DEBUG, "piece was released at it origial square %f-%f",
                  selected->square.x, selected->square.y);
 
-        selected->square = selectedOldPosition;
-        selected->pos.x = selectedOldPosition.x * SQUARE_SIZE;
-        selected->pos.y = selectedOldPosition.y * SQUARE_SIZE;
+        selected->pos.x = selected->square.x * SQUARE_SIZE;
+        selected->pos.y = selected->square.y * SQUARE_SIZE;
       }
       selected = NULL;
     }
-#ifdef DEBUG_MODE
-    PrintFormattedBoard(game);
-#endif
   }
 
   if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -77,7 +67,6 @@ void update() {
           clamp(mousePos.y, 0, WINDOW_WIDTH) - (float)PIECE_IMG_SIZE / 2;
 
       selected->pos = mousePos;
-      selected->square = GetSquareOverlabByTheCursor();
     }
   }
 }
@@ -125,6 +114,7 @@ int main() {
 #ifdef DEBUG_MODE
   SetTraceLogLevel(LOG_DEBUG);
 #endif
+
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Chess");
   SetTargetFPS(60);
 
@@ -136,6 +126,7 @@ int main() {
   }
 
   CloseWindow();
+
   DeleteGame(game);
 
   return 0;
