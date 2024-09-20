@@ -49,61 +49,6 @@ struct Game *NewGame() {
 
   game->board->size = 8;
 
-  // Load piece textures
-  for (int i = 0; i < 6; i++) {
-    char *filePathFormatStr = "src/resources/pieces/%s/%i.png";
-    char filePath[100];
-
-    const char *app_dir = GetApplicationDirectory();
-    ChangeDirectory(app_dir);
-
-    TraceLog(LOG_DEBUG, "Loading piece texture for index %d", i);
-
-    // Load white piece texture
-    sprintf(filePath, filePathFormatStr, "white", i);
-    Image whitePieceImg = LoadImage(filePath);
-    if (whitePieceImg.data == NULL) {
-      TraceLog(LOG_ERROR, "Failed to load white piece image from '%s'",
-               filePath);
-      DeleteGame(game);
-      return NULL;
-    }
-
-    // Load black piece texture
-    sprintf(filePath, filePathFormatStr, "black", i);
-    Image blackPieceImg = LoadImage(filePath);
-    if (blackPieceImg.data == NULL) {
-      TraceLog(LOG_ERROR, "Failed to load black piece image from '%s'",
-               filePath);
-      UnloadImage(whitePieceImg);
-      DeleteGame(game);
-      return NULL;
-    }
-
-    // Resize and load textures
-    ImageResize(&whitePieceImg, PIECE_IMG_SIZE, PIECE_IMG_SIZE);
-    ImageResize(&blackPieceImg, PIECE_IMG_SIZE, PIECE_IMG_SIZE);
-    Texture2D whitePieceTexture = LoadTextureFromImage(whitePieceImg);
-    Texture2D blackPieceTexture = LoadTextureFromImage(blackPieceImg);
-
-    if (!IsTextureReady(whitePieceTexture) ||
-        !IsTextureReady(blackPieceTexture)) {
-      TraceLog(LOG_ERROR, "Failed to load textures properly");
-      UnloadImage(whitePieceImg);
-      UnloadImage(blackPieceImg);
-      DeleteGame(game);
-      return NULL;
-    }
-
-    UnloadImage(whitePieceImg);
-    UnloadImage(blackPieceImg);
-
-    _whitePieceTextures[i] = whitePieceTexture;
-    _blackPieceTextures[i] = blackPieceTexture;
-
-    TraceLog(LOG_DEBUG, "Successfully loaded textures for index %d", i);
-  }
-
   ResetDefaultConfiguration(game);
   TraceLog(LOG_DEBUG, "Game initialization complete");
 
@@ -131,19 +76,6 @@ void DeleteGame(struct Game *game) {
       free(game->board->pieces);
     }
     free(game->board);
-  }
-
-  // Unload textures
-  TraceLog(LOG_DEBUG, "Unloading textures");
-  for (int i = 0; i < 6; i++) {
-    if (IsTextureReady(_whitePieceTextures[i])) {
-      UnloadTexture(_whitePieceTextures[i]);
-      _whitePieceTextures[i] = (Texture2D){0};
-    }
-    if (IsTextureReady(_blackPieceTextures[i])) {
-      UnloadTexture(_blackPieceTextures[i]);
-      _blackPieceTextures[i] = (Texture2D){0};
-    }
   }
 
   TraceLog(LOG_DEBUG, "Freeing game structure");
@@ -262,27 +194,6 @@ void ResetDefaultConfiguration(struct Game *game) {
 struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
                                    unsigned y) {
   return game->board->pieces[x][y];
-}
-
-Vector2 GetSquareOverlabByTheCursor() {
-  float mouseX = GetMouseX();
-  float mouseY = GetMouseY();
-
-  Vector2 pos = (Vector2){
-      .x = (int)(mouseX / SQUARE_SIZE),
-      .y = (int)(mouseY / SQUARE_SIZE),
-  };
-
-  TraceLog(LOG_DEBUG,
-           "Raw Mouse position: (%d, %d) - Square position: (%d, %d)",
-           (int)mouseX, (int)mouseY, (int)pos.x, (int)pos.y);
-  return pos;
-}
-
-Texture2D *GetPieceTexture(const struct Piece *piece) {
-  if (piece->player == WhitePlayer)
-    return &(_whitePieceTextures[piece->type]);
-  return &(_blackPieceTextures[piece->type]);
 }
 
 enum Player GetCurrentPlayer(const struct Game *game) {

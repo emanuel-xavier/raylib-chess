@@ -53,21 +53,14 @@ struct Game {
   struct Moves moves;
 };
 
-static Texture2D _whitePieceTextures[6];
-static Texture2D _blackPieceTextures[6];
-
 struct Game *NewGame();
 void DeleteGame(struct Game *game);
 void ResetDefaultConfiguration(struct Game *game);
 struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
                                    unsigned y);
-Texture2D *GetPieceTexture(const struct Piece *piece);
 bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos);
 enum Player GetCurrentPlayer(const struct Game *game);
 enum Player NextPlayer(struct Game *Game);
-
-Vector2 GetSquareOverlabByTheCursor();
-
 void GetPossibleMoves(struct Moves *moves, const struct Board *board,
                       const struct Piece *piece);
 
