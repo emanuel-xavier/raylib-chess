@@ -254,6 +254,8 @@ void ResetDefaultConfiguration(struct Game *game) {
   TraceLog(LOG_DEBUG, "Setting current player to WhitePlayer");
   game->_currentPlayer = WhitePlayer;
 
+  game->moves = (struct Moves){.size = 0};
+
   TraceLog(LOG_DEBUG, "Game reset complete");
 }
 
@@ -329,11 +331,12 @@ bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
     return false;
   }
 
-  moves.size = 0;
-  GetPossibleMoves(&moves, game->board, piece);
+  game->moves.size = 0;
+  GetPossibleMoves(&game->moves, game->board, piece);
   bool validMove = false;
-  for (int i = 0; i < moves.size; i++) {
-    if (moves.squares[i].x == pos->x && moves.squares[i].y == pos->y) {
+  for (int i = 0; i < game->moves.size; i++) {
+    if (game->moves.squares[i].x == pos->x &&
+        game->moves.squares[i].y == pos->y) {
       TraceLog(LOG_DEBUG, "Valid move");
       validMove = true;
       break;

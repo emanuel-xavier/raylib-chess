@@ -50,11 +50,11 @@ struct Game {
   struct Piece _whitePieces[16];
   struct Piece _blackPieces[16];
   enum Player _currentPlayer;
+  struct Moves moves;
 };
 
 static Texture2D _whitePieceTextures[6];
 static Texture2D _blackPieceTextures[6];
-static struct Moves moves = (struct Moves){.size = 0};
 
 struct Game *NewGame();
 void DeleteGame(struct Game *game);
