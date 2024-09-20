@@ -129,7 +129,7 @@ void update() {
       Vector2 newSquare = GetSquareOverlabByTheCursor();
       TraceLog(LOG_DEBUG, "next square %f-%f", newSquare.x, newSquare.y);
 
-      if (MovePiece(game, selected, &newSquare)) {
+      if (MovePiece(game, &selected->square, &newSquare)) {
         TraceLog(LOG_DEBUG, "piece was released at %f-%f", selected->square.x,
                  selected->square.y);
         NextPlayer(game);

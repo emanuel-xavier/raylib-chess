@@ -58,11 +58,11 @@ void DeleteGame(struct Game *game);
 void ResetDefaultConfiguration(struct Game *game);
 struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
                                    unsigned y);
-bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos);
+bool MovePiece(struct Game *game, const Vector2 *curPos, const Vector2 *pos);
 enum Player GetCurrentPlayer(const struct Game *game);
 enum Player NextPlayer(struct Game *Game);
-void GetPossibleMoves(struct Moves *moves, const struct Board *board,
-                      const struct Piece *piece);
+void GetPossibleMoves(struct Moves *moves, const struct Game *game,
+                      const Vector2 *pos);
 
 #define WHITE_PLAYER 'W'
 #define BLACK_PLAYER 'B'

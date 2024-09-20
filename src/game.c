@@ -217,7 +217,8 @@ enum Player NextPlayer(struct Game *game) {
 
 #include <stdio.h>
 
-bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
+bool MovePiece(struct Game *game, const Vector2 *curPos, const Vector2 *pos) {
+  struct Piece *piece = game->board->pieces[(int)curPos->x][(int)curPos->y];
   if (game == NULL || piece == NULL || pos == NULL) {
     TraceLog(LOG_ERROR, "Invalid parameters passed to MovePiece");
     return false;
@@ -243,7 +244,7 @@ bool MovePiece(struct Game *game, struct Piece *piece, const Vector2 *pos) {
   }
 
   game->moves.size = 0;
-  GetPossibleMoves(&game->moves, game->board, piece);
+  GetPossibleMoves(&game->moves, game, &piece->square);
   bool validMove = false;
   for (int i = 0; i < game->moves.size; i++) {
     if (game->moves.squares[i].x == pos->x &&
@@ -519,45 +520,46 @@ void getPawnPossibleMoves(struct Moves *moves, const struct Board *board,
   // TODO: En Passant
 }
 
-void GetPossibleMoves(struct Moves *moves, const struct Board *board,
-                      const struct Piece *piece) {
-  moves->size = 0;
+void GetPossibleMoves(struct Moves *moves, const struct Game *game,
+                      const Vector2 *pos) {
+  struct Piece *piece = game->board->pieces[(int)pos->x][(int)pos->y];
   if (piece == NULL) {
     return;
   }
+  moves->size = 0;
 
   switch (piece->type) {
   case Knight: {
     TraceLog(LOG_DEBUG, "Knight move");
-    getKnightPossibleMoves(moves, board, piece);
+    getKnightPossibleMoves(moves, game->board, piece);
     break;
   }
   case Bishop: {
     TraceLog(LOG_DEBUG, "Bishop move");
-    getVerticalMovesDFS(moves, board, piece, 9999);
+    getVerticalMovesDFS(moves, game->board, piece, 9999);
     break;
   }
   case Rook: {
     TraceLog(LOG_DEBUG, "Rook move");
-    getStraightMovesDFS(moves, board, piece, 9999);
+    getStraightMovesDFS(moves, game->board, piece, 9999);
     break;
   }
   case Queen: {
     TraceLog(LOG_DEBUG, "Queen move");
-    getStraightMovesDFS(moves, board, piece, 9999);
-    getVerticalMovesDFS(moves, board, piece, 9999);
+    getStraightMovesDFS(moves, game->board, piece, 9999);
+    getVerticalMovesDFS(moves, game->board, piece, 9999);
     break;
   }
   case King: {
     TraceLog(LOG_DEBUG, "King move");
-    getStraightMovesDFS(moves, board, piece, 1);
-    getVerticalMovesDFS(moves, board, piece, 1);
+    getStraightMovesDFS(moves, game->board, piece, 1);
+    getVerticalMovesDFS(moves, game->board, piece, 1);
     // TODO: casting
     break;
   }
   case Pawn: {
     TraceLog(LOG_DEBUG, "Pawn move");
-    getPawnPossibleMoves(moves, board, piece);
+    getPawnPossibleMoves(moves, game->board, piece);
     break;
   }
   default:
