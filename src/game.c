@@ -186,8 +186,6 @@ void ResetDefaultConfiguration(struct Game *game) {
   TraceLog(LOG_DEBUG, "Setting current player to WhitePlayer");
   game->_currentPlayer = WhitePlayer;
 
-  game->moves = (struct Moves){.size = 0};
-
   TraceLog(LOG_DEBUG, "Game reset complete");
 }
 
@@ -243,12 +241,10 @@ bool MovePiece(struct Game *game, const Vector2 *curPos, const Vector2 *pos) {
     return false;
   }
 
-  game->moves.size = 0;
-  GetPossibleMoves(&game->moves, game, &piece->square);
+  struct Moves moves = GetPossibleMoves(game, &piece->square);
   bool validMove = false;
-  for (int i = 0; i < game->moves.size; i++) {
-    if (game->moves.squares[i].x == pos->x &&
-        game->moves.squares[i].y == pos->y) {
+  for (int i = 0; i < moves.size; i++) {
+    if (moves.squares[i].x == pos->x && moves.squares[i].y == pos->y) {
       TraceLog(LOG_DEBUG, "Valid move");
       validMove = true;
       break;
@@ -520,49 +516,51 @@ void getPawnPossibleMoves(struct Moves *moves, const struct Board *board,
   // TODO: En Passant
 }
 
-void GetPossibleMoves(struct Moves *moves, const struct Game *game,
-                      const Vector2 *pos) {
+struct Moves GetPossibleMoves(const struct Game *game, const Vector2 *pos) {
   struct Piece *piece = game->board->pieces[(int)pos->x][(int)pos->y];
+  struct Moves moves;
+  moves.size = 0;
   if (piece == NULL) {
-    return;
+    return moves;
   }
-  moves->size = 0;
 
   switch (piece->type) {
   case Knight: {
     TraceLog(LOG_DEBUG, "Knight move");
-    getKnightPossibleMoves(moves, game->board, piece);
+    getKnightPossibleMoves(&moves, game->board, piece);
     break;
   }
   case Bishop: {
     TraceLog(LOG_DEBUG, "Bishop move");
-    getVerticalMovesDFS(moves, game->board, piece, 9999);
+    getVerticalMovesDFS(&moves, game->board, piece, 9999);
     break;
   }
   case Rook: {
     TraceLog(LOG_DEBUG, "Rook move");
-    getStraightMovesDFS(moves, game->board, piece, 9999);
+    getStraightMovesDFS(&moves, game->board, piece, 9999);
     break;
   }
   case Queen: {
     TraceLog(LOG_DEBUG, "Queen move");
-    getStraightMovesDFS(moves, game->board, piece, 9999);
-    getVerticalMovesDFS(moves, game->board, piece, 9999);
+    getStraightMovesDFS(&moves, game->board, piece, 9999);
+    getVerticalMovesDFS(&moves, game->board, piece, 9999);
     break;
   }
   case King: {
     TraceLog(LOG_DEBUG, "King move");
-    getStraightMovesDFS(moves, game->board, piece, 1);
-    getVerticalMovesDFS(moves, game->board, piece, 1);
+    getStraightMovesDFS(&moves, game->board, piece, 1);
+    getVerticalMovesDFS(&moves, game->board, piece, 1);
     // TODO: casting
     break;
   }
   case Pawn: {
     TraceLog(LOG_DEBUG, "Pawn move");
-    getPawnPossibleMoves(moves, game->board, piece);
+    getPawnPossibleMoves(&moves, game->board, piece);
     break;
   }
   default:
     TraceLog(LOG_DEBUG, "This piece does not has implementation for this");
   }
+
+  return moves;
 }

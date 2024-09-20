@@ -50,7 +50,6 @@ struct Game {
   struct Piece _whitePieces[16];
   struct Piece _blackPieces[16];
   enum Player _currentPlayer;
-  struct Moves moves;
 };
 
 struct Game *NewGame();
@@ -61,8 +60,7 @@ struct Piece *GetPieceInXYPosition(const struct Game *game, unsigned x,
 bool MovePiece(struct Game *game, const Vector2 *curPos, const Vector2 *pos);
 enum Player GetCurrentPlayer(const struct Game *game);
 enum Player NextPlayer(struct Game *Game);
-void GetPossibleMoves(struct Moves *moves, const struct Game *game,
-                      const Vector2 *pos);
+struct Moves GetPossibleMoves(const struct Game *game, const Vector2 *pos);
 
 #define WHITE_PLAYER 'W'
 #define BLACK_PLAYER 'B'
